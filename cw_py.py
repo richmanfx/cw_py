@@ -4,7 +4,9 @@
 import os
 import sys
 import argparse
-# import random
+import random
+from time import sleep
+
 
 version = '1.0.0'
 
@@ -33,7 +35,7 @@ def create_parser(default_cw_file):
     return parser
 
 
-# Провка диапазона допустимых значений
+# Проверка диапазона допустимых значений
 def valid_range(minimum, maximum, variable):
     if (variable < minimum) or (variable > maximum):
         result = False
@@ -42,27 +44,73 @@ def valid_range(minimum, maximum, variable):
     return result
 
 
+# Выдача случайного объекта из списка
+def get_random_word(all_words):
+    random.seed()                      # Инициализация
+    return random.choice(all_words)
+
+
+# Воспроизведение символа, буквы или цифры
+def symbol_sound(symbol, dash, dot):
+    pass
+
+
 def main():
-    default_cw_file = 'cw.txt'  # Файл по-умолчанию с CW словами
+    default_cw_file = 'cw.txt'                  # Файл по-умолчанию с CW словами
 
     # Очистить консоль
     clear_console()
+
     # Обработать аргументы командной строки
-    parser = create_parser(default_cw_file)  # Экземпляр парсера
+    parser = create_parser(default_cw_file)     # Экземпляр парсера
     namespace = parser.parse_args()
-    cw_name = namespace.file  # файл из командной строки с CW словами
 
     # Проверить аргументы командной строки
     if not argument_validator(namespace):
-        sys.exit()                       # Выход из программы если плохие аргументы
+        sys.exit()                      # Выход из программы если плохие аргументы
+
+    # Прочитать слова из файла
+    cw_name = namespace.file            # файл с CW словами из командной строки
+    all_words = cw_name.read().split()
+    cw_name.close()                     # Закрыть файл
+
+    # Основной цикл воспроизведения и вывода слов
+    word_counter = 0
+    while word_counter < namespace.num:
+
+        # Выбор случайного слова, перевод в верхний регистр
+        random_word = get_random_word(all_words).upper()
+        # print(random_word)
+
+        # Воспроизведение слова
+        dot = 5.800 / namespace.speed               # Длительность точки
+        dash = 3 * dot                              # Длительность тире
+        dash_conjoint = dash                        # Промежуток между слитными буквами типа <KN>
+
+        for symbol in random_word:          # Перебрать буквы в слове
+            # Воспроизведение буквы
+                # Обработка слитных слов
+            if symbol == '<':
+                dash_conjoint = dot                 # "<" - слитное слово
+            if symbol == '>':
+                dash_conjoint = dash                # ">" - раздельное слово
+                sleep(dash_conjoint)
+
+            symbol_sound(symbol, dash, dot)         # Воспроизводим символ
+            sleep(dash_conjoint)                    # Пауза после буквы
+
+        # Вывод слов на экран
+        print(random_word.ljust(8)),                # Через 8 символов, без перевода строки
+        word_counter += 1                           # Следующее слово
+        # Разбить вывод на 10 столбцов
+        if not word_counter % 10:
+            print('')                               # После кратного 10 столбца - перевод строки
+
+        sleep(namespace.pause * dash)               # Пауза между словами
 
 
-
-    print(namespace)
-
-
+# Проверка допустимых значений аргументов командной строки
 def argument_validator(namespace):
-    # Проверка допустимых значений аргументов командной строки
     validation_result = True
     if not valid_range(1, 1000, namespace.num):
         print('Недопустимое значение для количества слов (1...1000).')
