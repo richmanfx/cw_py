@@ -52,22 +52,31 @@ def main():
     namespace = parser.parse_args()
     cw_name = namespace.file  # файл из командной строки с CW словами
 
-    # Проверка допустимых значений аргументов командной строки
-    # bad_argument
-    if not valid_range(1, 1000, namespace.num):
-        print('Недопустимое значение для количества слов (1...1000).')
-        sys.exit()  # Выход из программы
-    if not valid_range(1, 15, namespace.pause):
-        print('Недопустимое значение для паузы между словами (1...15).')
-        sys.exit()
-    if not valid_range(50, 250, namespace.speed):
-        print('Недопустимое значение для скорости (50...250).')
-        sys.exit()
-    if not valid_range(300, 2000, namespace.tone):
-        print('Недопустимое значение для тона (300...2000).')
-        sys.exit()
+    # Проверить аргументы командной строки
+    if not argument_validator(namespace):
+        sys.exit()                       # Выход из программы если плохие аргументы
+
+
 
     print(namespace)
+
+
+def argument_validator(namespace):
+    # Проверка допустимых значений аргументов командной строки
+    validation_result = True
+    if not valid_range(1, 1000, namespace.num):
+        print('Недопустимое значение для количества слов (1...1000).')
+        validation_result = False
+    elif not valid_range(1, 15, namespace.pause):
+        print('Недопустимое значение для паузы между словами (1...15).')
+        validation_result = False
+    elif not valid_range(50, 250, namespace.speed):
+        print('Недопустимое значение для скорости (50...250).')
+        validation_result = False
+    elif not valid_range(300, 2000, namespace.tone):
+        print('Недопустимое значение для тона (300...2000).')
+        validation_result = False
+    return validation_result
 
 
 if __name__ == '__main__':
