@@ -5,7 +5,11 @@ import os
 import sys
 import argparse
 import random
-from time import sleep
+# from time import sleep
+import sounddevice as sd
+import array
+import math
+import wave
 
 
 version = '1.0.0'
@@ -46,13 +50,36 @@ def valid_range(minimum, maximum, variable):
 
 # Выдача случайного объекта из списка
 def get_random_word(all_words):
-    random.seed()                      # Инициализация
+    random.seed()                               # Инициализация
     return random.choice(all_words)
 
 
 # Воспроизведение символа, буквы или цифры
 def symbol_sound(symbol, dash, dot):
-    pass
+    # print sd.query_devices()
+
+    duration = 1
+    frequency = 700
+    sample_rate = 44100
+
+    data = array.array('h')
+    num_samples = sample_rate * duration
+    num_samples_per_cycle = int(sample_rate / frequency)
+
+    for n in range(num_samples):
+        sample = 1.0 * ((32 << 10) - 1)
+        sample *= math.sin(6.2831853 * (n % num_samples_per_cycle) / num_samples_per_cycle)
+        # print sample
+        data.append(int(sample))
+
+    # sd.play(data.tostring(), sample_rate)
+    # sd.stop()
+    # print(data.tostring())
+
+    f = wave.open('testing.wav', 'w')
+    f.setparams((1, 2, sample_rate, num_samples, 'NONE', 'Uncompressed'))
+    f.writeframes(data.tostring())
+    f.close()
 
 
 def main():
@@ -67,12 +94,12 @@ def main():
 
     # Проверить аргументы командной строки
     if not argument_validator(namespace):
-        sys.exit()                      # Выход из программы если плохие аргументы
+        sys.exit()                              # Выход из программы если плохие аргументы
 
     # Прочитать слова из файла
-    cw_name = namespace.file            # файл с CW словами из командной строки
+    cw_name = namespace.file                    # файл с CW словами из командной строки
     all_words = cw_name.read().split()
-    cw_name.close()                     # Закрыть файл
+    cw_name.close()                             # Закрыть файл
 
     # Основной цикл воспроизведения и вывода слов
     word_counter = 0
@@ -83,21 +110,21 @@ def main():
         # print(random_word)
 
         # Воспроизведение слова
-        dot = 5.800 / namespace.speed               # Длительность точки
+        dot = 5800 / namespace.speed                # Длительность точки
         dash = 3 * dot                              # Длительность тире
         dash_conjoint = dash                        # Промежуток между слитными буквами типа <KN>
 
-        for symbol in random_word:          # Перебрать буквы в слове
+        for symbol in random_word:                  # Перебрать буквы в слове
             # Воспроизведение буквы
                 # Обработка слитных слов
             if symbol == '<':
                 dash_conjoint = dot                 # "<" - слитное слово
             if symbol == '>':
                 dash_conjoint = dash                # ">" - раздельное слово
-                sleep(dash_conjoint)
+                sd.sleep(dash_conjoint)
 
             symbol_sound(symbol, dash, dot)         # Воспроизводим символ
-            sleep(dash_conjoint)                    # Пауза после буквы
+            sd.sleep(dash_conjoint)                    # Пауза после буквы
 
         # Вывод слов на экран
         print(random_word.ljust(8)),                # Через 8 символов, без перевода строки
@@ -106,7 +133,7 @@ def main():
         if not word_counter % 10:
             print('')                               # После кратного 10 столбца - перевод строки
 
-        sleep(namespace.pause * dash)               # Пауза между словами
+        sd.sleep(namespace.pause * dash)            # Пауза между словами
 
 
 # Проверка допустимых значений аргументов командной строки
