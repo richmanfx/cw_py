@@ -53,7 +53,7 @@ def get_random_word(all_words):
 
 # Воспроизведение символа, буквы или цифры
 def symbol_sound(symbol, symbol_cw, dot, dash_conjoint, frequency, sample_rate):
-    k = dash_conjoint / dot  # коеффициент для слитных букв ( <AR>, <RN> и т.п.)
+    k = dash_conjoint / dot  # коэффициент для слитных букв ( <AR>, <RN> и т.п.)
     duration = dot / 1000.0  # длительность точки (1000 - в секунды)
     amplitude = 32767.0  # максимальная амплидуда семпла/выборки
     ramp = 0.15  # пологость фронта/ската посылки
@@ -64,6 +64,7 @@ def symbol_sound(symbol, symbol_cw, dot, dash_conjoint, frequency, sample_rate):
     num_samples_per_cycle = int(sample_rate / frequency)  # количество выборок на период
     delta_amplitude = 1.0 / ramp_samples  # прирост амплитуды для следующей выборки фронта
 
+    # print symbol.encode('latin1')
     for counter, msg in enumerate(symbol_cw[symbol]):
         if msg == '.':
             cw_message(amplitude, data, delta_amplitude, num_samples,
@@ -177,7 +178,7 @@ def main():
 # Считать слова CW из файла
 def get_cw_words(namespace):
     cw_name = namespace.file  # файл с CW словами из командной строки
-    all_words = cw_name.read().split()
+    all_words = cw_name.read().decode('utf-8').split()
     cw_name.close()  # Закрыть файл
     return all_words
 
@@ -186,10 +187,10 @@ def get_cw_words(namespace):
 def method_name(data_file_name):
     data_file = open(data_file_name, 'r')
     strings = data_file.readlines()
-    symbol_cw = {}
+    symbol_cw = {u'': ''}
     for string in strings:
         if string != '\n':  # пропустить пустые строки в файле
-            symbol_cw.update({string.strip().split()[0]: string.strip().split()[1]})
+            symbol_cw.update({string.strip().split()[0].decode('utf-8'): string.strip().split()[1]})
     data_file.close()
     return symbol_cw
 
@@ -214,32 +215,22 @@ def argument_validator(namespace):
 
 def dot_read_from_file(file_name):
     import pyaudio
-    # define stream chunk
-    chunk = 1024
-
-    # open a wav format music
-    f = wave.open(file_name, 'rb')
-    # instantiate PyAudio
-    p = pyaudio.PyAudio()
-    # open stream
-    stream = p.open(format=p.get_format_from_width(f.getsampwidth()),
+    chunk = 1024                        # define stream chunk
+    f = wave.open(file_name, 'rb')      # open a wav format music
+    p = pyaudio.PyAudio()               # instantiate PyAudio
+    stream = p.open(format=p.get_format_from_width(f.getsampwidth()),           # open stream
                     channels=f.getnchannels(),
                     rate=f.getframerate(),
                     output=True)
-    # read data
-    data = f.readframes(chunk)
+    data = f.readframes(chunk)          # read data
 
-    # play stream
-    while data != '':
+    while data != '':                   # play stream
         stream.write(data)
         data = f.readframes(chunk)
 
-    # stop stream
-    stream.stop_stream()
-    stream.close()
-
-    # close PyAudio
-    p.terminate()
+    stream.stop_stream()                # stop stream
+    stream.close()                      # close stream
+    p.terminate()                       # close PyAudio
 
 
 if __name__ == '__main__':
