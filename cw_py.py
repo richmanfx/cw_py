@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 from os import system
-from sys import platform, exit, stdout
+from sys import platform, stdout
 import argparse
 import random
 import sounddevice as sd
@@ -9,7 +9,7 @@ from array import array
 import math
 import wave
 
-version = '1.0.0'
+VERSION = '1.0.0'
 __author__ = 'Aleksandr Jashhuk, Zoer, R5AM, www.r5am.ru'
 
 
@@ -25,13 +25,14 @@ def clear_console():
 def create_parser(default_cw_file):
     parser = argparse.ArgumentParser(description='Generation of random CW words.',
                                      epilog='For example: cw_py.py -n 50 -t 750 -s 100 -p 3')
-    parser.add_argument('--version', '-v', action='version', version='cw_py {}'.format(version))
+    parser.add_argument('--version', '-v', action='version', version='cw_py {}'.format(VERSION))
     parser.add_argument('file', nargs='?', type=argparse.FileType(),
                         default=default_cw_file, help='file with CW words')
     parser.add_argument('--num', '-n', type=int, default=10, help='quantity of CW words')
     parser.add_argument('--pause', '-p', type=int, default=1, help='pause between words (in the dash)')
     parser.add_argument('--speed', '-s', type=int, default=100, help='speed (characters per minute)')
     parser.add_argument('--tone', '-t', type=int, default=700, help='pitch (Hz)')
+    parser.add_argument('--ramp', '-r', type=float, default=0.15, help='flatness of the front')
     return parser
 
 
@@ -51,11 +52,11 @@ def get_random_word(all_words):
 
 
 # Воспроизведение символа, буквы или цифры
-def symbol_sound(symbol, symbol_cw, dot, dash_conjoint, frequency, sample_rate):
+def symbol_sound(symbol, symbol_cw, dot, dash_conjoint, frequency, sample_rate, ramp):
     k = dash_conjoint / dot  # коэффициент для слитных букв ( <AR>, <RN> и т.п.)
     duration = dot / 1000.0  # длительность точки (1000 - в секунды)
     amplitude = 32767.0  # максимальная амплидуда семпла/выборки
-    ramp = 0.15  # пологость фронта/ската посылки
+    # ramp = 0.15  # пологость фронта/ската посылки
     data = array('h')  # 'h' - signed short integer, 2 bytes, массив для семпла буквы
 
     num_samples = int(sample_rate * duration)  # количество выборок посылки
@@ -82,22 +83,23 @@ def symbol_sound(symbol, symbol_cw, dot, dash_conjoint, frequency, sample_rate):
 
 def cw_message(amplitude, data, delta_amplitude, num_samples, num_samples_per_cycle, ramp_samples):
     # Фронт посылки
-    for n in range(ramp_samples):
+    for counter in range(ramp_samples):
         sample = amplitude
-        sample *= (n * delta_amplitude) * math.sin(6.2831853 * (n % num_samples_per_cycle) / num_samples_per_cycle)
+        sample *= (counter * delta_amplitude) * math.sin(
+                                6.2831853 * (counter % num_samples_per_cycle) / num_samples_per_cycle)
         data.append(int(sample))
 
     # Центральная часть посылки
-    for n in range(ramp_samples, num_samples - ramp_samples):
+    for counter in range(ramp_samples, num_samples - ramp_samples):
         sample = amplitude
-        sample *= math.sin(6.2831853 * (n % num_samples_per_cycle) / num_samples_per_cycle)
+        sample *= math.sin(6.2831853 * (counter % num_samples_per_cycle) / num_samples_per_cycle)
         data.append(int(sample))
 
     # Спад посылки
-    for n in range(num_samples - ramp_samples, num_samples):
+    for counter in range(num_samples - ramp_samples, num_samples):
         sample = amplitude
-        sample *= ((num_samples - n) * delta_amplitude) * math.sin(
-            6.2831853 * (n % num_samples_per_cycle) / num_samples_per_cycle)
+        sample *= ((num_samples - counter) * delta_amplitude) * math.sin(
+            6.2831853 * (counter % num_samples_per_cycle) / num_samples_per_cycle)
         data.append(int(sample))
 
 
@@ -105,10 +107,10 @@ def cw_message(amplitude, data, delta_amplitude, num_samples, num_samples_per_cy
 def wav_file_save(data, num_samples, sample_rate):
     mono = 1
     sample_width = 2
-    f = wave.open('dot.wav', 'w')
-    f.setparams((mono, sample_width, sample_rate, num_samples, 'NONE', 'Uncompressed'))
-    f.writeframes(data.tostring())
-    f.close()
+    wav_file = wave.open('dot.wav', 'w')
+    wav_file.setparams((mono, sample_width, sample_rate, num_samples, 'NONE', 'Uncompressed'))
+    wav_file.writeframes(data.tostring())
+    wav_file.close()
 
 
 def main():
@@ -152,7 +154,8 @@ def main():
 
             # Воспроизводим символ
             if symbol != '<' or symbol != '>':
-                data, num_samples = symbol_sound(symbol, symbol_cw, dot, dash_conjoint, namespace.tone, sample_rate)
+                data, num_samples = symbol_sound(symbol, symbol_cw, dot, dash_conjoint,
+                                                 namespace.tone, sample_rate, namespace.ramp)
                 for symbol_sample in data.tolist():  # Добавить букву в массив семплов
                     data_word.append(symbol_sample)
 
@@ -167,7 +170,7 @@ def main():
         word_counter += 1  # Следующее слово
         # Разбить вывод на 10 столбцов
         if not word_counter % 10:
-            print('')  # После кратного 10 столбца - перевод строки
+            print ''  # После кратного 10 столбца - перевод строки
 
         sd.sleep(namespace.pause * dash)  # Пауза между словами
 
@@ -196,16 +199,19 @@ def method_name(data_file_name):
 def argument_validator(namespace):
     validation_result = True
     if not valid_range(1, 1000, namespace.num):
-        print('Недопустимое значение для количества слов (1...1000).')
+        print 'Недопустимое значение для количества слов (1...1000).'
         validation_result = False
     elif not valid_range(1, 15, namespace.pause):
-        print('Недопустимое значение для паузы между словами (1...15).')
+        print 'Недопустимое значение для паузы между словами (1...15).'
         validation_result = False
     elif not valid_range(50, 250, namespace.speed):
-        print('Недопустимое значение для скорости (50...250).')
+        print 'Недопустимое значение для скорости (50...250).'
         validation_result = False
     elif not valid_range(300, 2000, namespace.tone):
-        print('Недопустимое значение для тона (300...2000).')
+        print 'Недопустимое значение для тона (300...2000).'
+        validation_result = False
+    elif not valid_range(0.01, 0.50, namespace.ramp):
+        print 'Недопустимое значение пологости фронта посылки (0,01...0,5).'
         validation_result = False
     return validation_result
 
@@ -213,21 +219,21 @@ def argument_validator(namespace):
 def dot_read_from_file(file_name):
     import pyaudio
     chunk = 1024                        # define stream chunk
-    f = wave.open(file_name, 'rb')      # open a wav format music
-    p = pyaudio.PyAudio()               # instantiate PyAudio
-    stream = p.open(format=p.get_format_from_width(f.getsampwidth()),           # open stream
-                    channels=f.getnchannels(),
-                    rate=f.getframerate(),
-                    output=True)
-    data = f.readframes(chunk)          # read data
+    wav_file = wave.open(file_name, 'rb')      # open a wav format music
+    py_audio = pyaudio.PyAudio()               # instantiate PyAudio
+    stream = py_audio.open(format=py_audio.get_format_from_width(wav_file.getsampwidth()),           # open stream
+                           channels=wav_file.getnchannels(),
+                           rate=wav_file.getframerate(),
+                           output=True)
+    data = wav_file.readframes(chunk)          # read data
 
     while data != '':                   # play stream
         stream.write(data)
-        data = f.readframes(chunk)
+        data = wav_file.readframes(chunk)
 
     stream.stop_stream()                # stop stream
     stream.close()                      # close stream
-    p.terminate()                       # close PyAudio
+    py_audio.terminate()                       # close PyAudio
 
 
 if __name__ == '__main__':
