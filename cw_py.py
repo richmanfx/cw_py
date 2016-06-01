@@ -1,6 +1,5 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-
 from os import system
 from sys import platform, exit, stdout
 import argparse
@@ -38,10 +37,10 @@ def create_parser(default_cw_file):
 
 # Проверка диапазона допустимых значений
 def valid_range(minimum, maximum, variable):
-    if (variable < minimum) or (variable > maximum):
-        result = False
-    else:
+    if (variable >= minimum) and (variable <= maximum):
         result = True
+    else:
+        result = False
     return result
 
 
@@ -64,7 +63,6 @@ def symbol_sound(symbol, symbol_cw, dot, dash_conjoint, frequency, sample_rate):
     num_samples_per_cycle = int(sample_rate / frequency)  # количество выборок на период
     delta_amplitude = 1.0 / ramp_samples  # прирост амплитуды для следующей выборки фронта
 
-    # print symbol.encode('latin1')
     for counter, msg in enumerate(symbol_cw[symbol]):
         if msg == '.':
             cw_message(amplitude, data, delta_amplitude, num_samples,
@@ -93,7 +91,6 @@ def cw_message(amplitude, data, delta_amplitude, num_samples, num_samples_per_cy
     for n in range(ramp_samples, num_samples - ramp_samples):
         sample = amplitude
         sample *= math.sin(6.2831853 * (n % num_samples_per_cycle) / num_samples_per_cycle)
-        # print sample
         data.append(int(sample))
 
     # Спад посылки
