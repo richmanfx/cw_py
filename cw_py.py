@@ -218,22 +218,22 @@ def argument_validator(namespace):
 
 def dot_read_from_file(file_name):
     import pyaudio
-    chunk = 1024                        # define stream chunk
-    wav_file = wave.open(file_name, 'rb')      # open a wav format music
-    py_audio = pyaudio.PyAudio()               # instantiate PyAudio
+    chunk = 1024                                # define stream chunk
+    wav_file = wave.open(file_name, 'rb')       # open a wav format music
+    py_audio = pyaudio.PyAudio()                # instantiate PyAudio
     stream = py_audio.open(format=py_audio.get_format_from_width(wav_file.getsampwidth()),           # open stream
                            channels=wav_file.getnchannels(),
                            rate=wav_file.getframerate(),
                            output=True)
-    data = wav_file.readframes(chunk)          # read data
+    data = wav_file.readframes(chunk)           # read data
 
-    while data != '':                   # play stream
+    while data != '':                           # play stream
         stream.write(data)
         data = wav_file.readframes(chunk)
 
-    stream.stop_stream()                # stop stream
-    stream.close()                      # close stream
-    py_audio.terminate()                       # close PyAudio
+    stream.stop_stream()                        # stop stream
+    stream.close()                              # close stream
+    py_audio.terminate()                        # close PyAudio
 
 
 if __name__ == '__main__':
