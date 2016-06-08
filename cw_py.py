@@ -52,11 +52,20 @@ def get_random_word(all_words):
 
 
 # Воспроизведение символа, буквы или цифры
-def symbol_sound(symbol, symbol_cw, dot, dash_conjoint, frequency, sample_rate, ramp):
+# def symbol_sound(symbol, symbol_cw, dot, dash_conjoint, frequency, sample_rate, ramp):
+def symbol_sound(**kwargs):
+    # Извлекаем аргументы функции
+    symbol = kwargs['symbol']
+    symbol_cw = kwargs['symbol_cw']
+    dash_conjoint = kwargs['dash_conjoint']
+    dot = kwargs['dot']
+    frequency = kwargs['frequency']
+    sample_rate = kwargs['sample_rate']
+    ramp = kwargs['ramp']
+
     k = dash_conjoint / dot  # коэффициент для слитных букв ( <AR>, <RN> и т.п.)
     duration = dot / 1000.0  # длительность точки (1000 - в секунды)
     amplitude = 32767.0  # максимальная амплидуда семпла/выборки
-    # ramp = 0.15  # пологость фронта/ската посылки
     data = array('h')  # 'h' - signed short integer, 2 bytes, массив для семпла буквы
 
     num_samples = int(sample_rate * duration)  # количество выборок посылки
@@ -66,22 +75,34 @@ def symbol_sound(symbol, symbol_cw, dot, dash_conjoint, frequency, sample_rate, 
 
     for counter, msg in enumerate(symbol_cw[symbol]):
         if msg == '.':
-            cw_message(amplitude, data, delta_amplitude, num_samples,
-                       num_samples_per_cycle, ramp_samples)
+            # amplitude, data, delta_amplitude, num_samples, num_samples_per_cycle, ramp_samples
+            cw_message(amplitude=amplitude, data=data, delta_amplitude=delta_amplitude,
+                       num_samples=num_samples, num_samples_per_cycle=num_samples_per_cycle,
+                       ramp_samples=ramp_samples)
         elif msg == '-':
-            cw_message(amplitude, data, delta_amplitude, 3 * num_samples,
-                       num_samples_per_cycle, ramp_samples)
-        if counter < len(symbol_cw[symbol]) - 1:
-            cw_message(0, data, delta_amplitude, num_samples,
-                       num_samples_per_cycle, ramp_samples)
+            cw_message(amplitude=amplitude, data=data, delta_amplitude=delta_amplitude,
+                       num_samples=3*num_samples, num_samples_per_cycle=num_samples_per_cycle,
+                       ramp_samples=ramp_samples)
+        if counter < len(symbol_cw[symbol]) - 1:        # тишина - амплитуда=0
+            cw_message(amplitude=0, data=data, delta_amplitude=delta_amplitude,
+                       num_samples=num_samples, num_samples_per_cycle=num_samples_per_cycle,
+                       ramp_samples=ramp_samples)
 
-    cw_message(0, data, delta_amplitude, k * num_samples,
-               num_samples_per_cycle, ramp_samples)
+    cw_message(amplitude=0, data=data, delta_amplitude=delta_amplitude, num_samples=k*num_samples,
+               num_samples_per_cycle=num_samples_per_cycle, ramp_samples=ramp_samples)
 
     return data, num_samples
 
 
-def cw_message(amplitude, data, delta_amplitude, num_samples, num_samples_per_cycle, ramp_samples):
+def cw_message(**kwargs):
+    # Извлекаем аргументы функции
+    amplitude = kwargs['amplitude']
+    data = kwargs['data']
+    delta_amplitude = kwargs['delta_amplitude']
+    num_samples = kwargs['num_samples']
+    num_samples_per_cycle = kwargs['num_samples_per_cycle']
+    ramp_samples = kwargs['ramp_samples']
+
     # Фронт посылки
     for counter in range(ramp_samples):
         sample = amplitude
@@ -104,10 +125,10 @@ def cw_message(amplitude, data, delta_amplitude, num_samples, num_samples_per_cy
 
 
 # Записать массив данных в WAV-файл
-def wav_file_save(data, num_samples, sample_rate):
+def wav_file_save(data, num_samples, sample_rate, file_name):
     mono = 1
     sample_width = 2
-    wav_file = wave.open('dot.wav', 'w')
+    wav_file = wave.open(file_name, 'w')
     wav_file.setparams((mono, sample_width, sample_rate, num_samples, 'NONE', 'Uncompressed'))
     wav_file.writeframes(data.tostring())
     wav_file.close()
@@ -116,6 +137,7 @@ def wav_file_save(data, num_samples, sample_rate):
 def main():
     default_cw_file = 'cw.txt'  # Файл по-умолчанию с CW словами
     data_file_name = 'symbol-cw.dat'  # Файл соответствия символов посылкам, A = .-
+    temporary_wav_file = 'dot.wav'
 
     clear_console()  # Очистить консоль
 
@@ -154,15 +176,20 @@ def main():
 
             # Воспроизводим символ
             if symbol != '<' or symbol != '>':
-                data, num_samples = symbol_sound(symbol, symbol_cw, dot, dash_conjoint,
-                                                 namespace.tone, sample_rate, namespace.ramp)
+                # symbol, symbol_cw, dot, dash_conjoint, frequency, sample_rate, ramp
+                data, num_samples = symbol_sound(symbol=symbol, symbol_cw=symbol_cw,
+                                                 dot=dot, dash_conjoint=dash_conjoint,
+                                                 frequency=namespace.tone,
+                                                 sample_rate=sample_rate,
+                                                 ramp=namespace.ramp)
                 for symbol_sample in data.tolist():  # Добавить букву в массив семплов
                     data_word.append(symbol_sample)
 
             # sd.sleep(dash_conjoint)  # Пауза после буквы
 
-        wav_file_save(data_word, num_samples, sample_rate)  # Записать в файл данные
-        dot_read_from_file('dot.wav')
+        # Записываем слово во временный WAV-файл и озвучиваем
+        wav_file_save(data_word, num_samples, sample_rate, temporary_wav_file)
+        play_from_wave_file(temporary_wav_file)
 
         # Вывод слов на экран
         print(random_word.ljust(8)),                # Через 8 символов, без перевода строки
@@ -216,7 +243,7 @@ def argument_validator(namespace):
     return validation_result
 
 
-def dot_read_from_file(file_name):
+def play_from_wave_file(file_name):
     import pyaudio
     chunk = 1024                                # define stream chunk
     wav_file = wave.open(file_name, 'rb')       # open a wav format music
