@@ -25,7 +25,7 @@
       python cw_py.py --speed 120 --pause 3 --num 50 cw.txt
   
 6.Для короткой помощи запустить: 
-      python -h
+      cw_py.py -h
 
 
 --
