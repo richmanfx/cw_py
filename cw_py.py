@@ -33,6 +33,7 @@ def create_parser(default_cw_file):
     parser.add_argument('--speed', '-s', type=int, default=100, help='speed (characters per minute)')
     parser.add_argument('--tone', '-t', type=int, default=700, help='pitch (Hz)')
     parser.add_argument('--ramp', '-r', type=float, default=0.15, help='flatness of the front')
+    parser.add_argument('--display', '-d', type=int, default=1, help='show immediately')
     return parser
 
 
@@ -153,6 +154,7 @@ def main():
 
     # Основной цикл воспроизведения и вывода слов
     word_counter = 0
+    console_buffer = ""
     while word_counter < namespace.num:
         random_word = get_random_word(all_words).upper()  # Выбор случайного слова, верхний регистр
 
@@ -191,15 +193,26 @@ def main():
         wav_file_save(data_word, num_samples, sample_rate, temporary_wav_file)
         play_from_wave_file(temporary_wav_file)
 
-        # Вывод слов на экран
-        print(random_word.ljust(8)),                # Через 8 символов, без перевода строки
-        stdout.flush()                              # Обновить консоль для отображения print-ом с ','
-        word_counter += 1  # Следующее слово
-        # Разбить вывод на 10 столбцов
-        if not word_counter % 10:
-            print ''  # После кратного 10 столбца - перевод строки
+        if namespace.display == 1:      # Сразу отображаить слова
+            # Вывод слов на экран
+            print(random_word.ljust(8)),                # Через 8 символов, без перевода строки
+            stdout.flush()                              # Обновить консоль для отображения print-ом с ','
+            word_counter += 1  # Следующее слово
+            # Разбить вывод на 10 столбцов
+            if not word_counter % 10:
+                print ''  # После кратного 10 столбца - перевод строки
+        else:       # Не отображать слова сразу, а записывать в буфер
+            console_buffer = console_buffer + random_word.ljust(8)
+            word_counter += 1  # Следующее слово
+            # Разбить вывод на 10 столбцов
+            if not word_counter % 10:
+                console_buffer = console_buffer + "\n"
 
         sd.sleep(namespace.pause * dash)  # Пауза между словами
+
+    # Вывести из буфера все слова на экран
+    if namespace.display == 0:
+        print console_buffer,
 
 
 # Считать слова CW из файла
@@ -239,6 +252,9 @@ def argument_validator(namespace):
         validation_result = False
     elif not valid_range(0.01, 0.50, namespace.ramp):
         print 'Недопустимое значение пологости фронта посылки (0,01...0,5).'
+        validation_result = False
+    elif not valid_range(0, 1, namespace.display):
+        print 'Недопустимое значение параметра немедленного отображения (0 или 1).'
         validation_result = False
     return validation_result
 
