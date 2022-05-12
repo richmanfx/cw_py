@@ -241,8 +241,8 @@ def argument_validator(namespace):
     if not valid_range(1, 1000, namespace.num):
         print 'Недопустимое значение для количества слов (1...1000).'
         validation_result = False
-    elif not valid_range(1, 15, namespace.pause):
-        print 'Недопустимое значение для паузы между словами (1...15).'
+    elif not valid_range(1, 20, namespace.pause):
+        print 'Недопустимое значение для паузы между словами (1...20).'
         validation_result = False
     elif not valid_range(50, 250, namespace.speed):
         print 'Недопустимое значение для скорости (50...250).'
