@@ -25,15 +25,15 @@ def clear_console():
 def create_parser(default_cw_file):
     parser = argparse.ArgumentParser(description='Generation of random CW words.',
                                      epilog='For example: cw_py.py -n 50 -t 750 -s 100 -p 3')
-    parser.add_argument('--version', '-v', action='version', version='cw_py {}'.format(VERSION))
+    parser.add_argument('-v', '--version', action='version', version='cw_py {}'.format(VERSION))
     parser.add_argument('file', nargs='?', type=argparse.FileType(),
                         default=default_cw_file, help='file with CW words')
-    parser.add_argument('--num', '-n', type=int, default=10, help='quantity of CW words')
-    parser.add_argument('--pause', '-p', type=int, default=1, help='pause between words (in the dash)')
-    parser.add_argument('--speed', '-s', type=int, default=100, help='speed (characters per minute)')
-    parser.add_argument('--tone', '-t', type=int, default=700, help='pitch (Hz)')
-    parser.add_argument('--ramp', '-r', type=float, default=0.15, help='flatness of the front')
-    parser.add_argument('--display', '-d', type=int, default=1, help='show immediately')
+    parser.add_argument('-n', '--num', type=int, default=10, help='quantity of CW words')
+    parser.add_argument('-p', '--pause', type=int, default=1, help='pause between words (in the dash)')
+    parser.add_argument('-s', '--speed', type=int, default=100, help='speed (characters per minute)')
+    parser.add_argument('-t', '--tone', type=int, default=700, help='pitch (Hz)')
+    parser.add_argument('-r', '--ramp', type=float, default=0.15, help='flatness of the front')
+    parser.add_argument('-d', '--display', type=int, default=1, help='show immediately')
     return parser
 
 
@@ -241,8 +241,8 @@ def argument_validator(namespace):
     if not valid_range(1, 1000, namespace.num):
         print 'Недопустимое значение для количества слов (1...1000).'
         validation_result = False
-    elif not valid_range(1, 20, namespace.pause):
-        print 'Недопустимое значение для паузы между словами (1...20).'
+    elif not valid_range(1, 30, namespace.pause):
+        print 'Недопустимое значение для паузы между словами (1...30).'
         validation_result = False
     elif not valid_range(50, 250, namespace.speed):
         print 'Недопустимое значение для скорости (50...250).'
